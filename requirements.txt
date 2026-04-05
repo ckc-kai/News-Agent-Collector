@@ -1,0 +1,54 @@
+# ==========================================
+# Requires: Python 3.12.x
+# ==========================================
+
+# Web Framework
+fastapi==0.115.12
+uvicorn==0.34.2
+httpx==0.28.1
+
+# Database
+sqlalchemy==2.0.40
+asyncpg==0.30.0
+alembic==1.15.2
+psycopg2-binary==2.9.10
+
+# Cache & Task Queue
+redis==5.2.1
+celery==5.4.0
+
+# ML / NLP
+scikit-learn==1.6.1
+gensim==4.3.3
+numpy==1.26.4
+pandas==2.2.3
+
+# Embeddings (Phase 2, install now to avoid conflicts later)
+sentence-transformers==4.1.0
+
+# Recommendation (Phase 2)
+implicit==0.7.2
+
+# Summarization / LLM
+groq==0.25.0
+
+# News & Data Source APIs
+tavily-python==0.5.0
+praw==7.8.1
+feedparser==6.0.11
+arxiv==2.2.0
+
+# Content Processing
+beautifulsoup4==4.13.4
+trafilatura==2.0.0
+
+# NLP Utilities
+spacy==3.8.4
+nltk==3.9.1
+
+# Utilities
+python-dotenv==1.1.0
+pydantic==2.11.1
+pydantic-settings==2.9.1
+apscheduler==3.11.0
+tenacity==9.1.2
