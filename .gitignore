@@ -30,3 +30,6 @@ logs/
 # Database
 *.db
 *.sqlite3
+
+# Progress tracking (internal dev notes)
+progress/

@@ -19,10 +19,10 @@ Instead of checking dozens of websites, this system watches them for you — the
 
 Not everything needs the same level of detail. You can set per-topic depth:
 
-| Level | What You Get | Best For |
-|-------|-------------|----------|
-| Headline | One-line summary | Quick scanning |
-| Summary | 3-5 sentence overview | Daily reading |
+| Level     | What You Get                    | Best For                   |
+| --------- | ------------------------------- | -------------------------- |
+| Headline  | One-line summary                | Quick scanning             |
+| Summary   | 3-5 sentence overview           | Daily reading              |
 | Deep Dive | Full analysis with key findings | Topics you care most about |
 
 ---
@@ -65,12 +65,12 @@ cp .env.example .env
 
 The system uses free-tier APIs. You'll need to sign up for keys at:
 
-| Service | What It's For | Sign Up |
-|---------|--------------|---------|
-| Tavily | Web search | tavily.com |
-| NewsAPI | News articles | newsapi.org |
-| GNews | News articles | gnews.io |
-| Groq | AI summarization | groq.com |
+| Service | What It's For    | Sign Up     |
+| ------- | ---------------- | ----------- |
+| Tavily  | Web search       | tavily.com  |
+| NewsAPI | News articles    | newsapi.org |
+| GNews   | News articles    | gnews.io    |
+| Groq    | AI summarization | groq.com    |
 
 More sources are optional — the system works with whatever keys you provide and skips the rest.
 
@@ -101,21 +101,6 @@ News-Agent-Collector/
 ```
 
 > Project structure will expand as development progresses.
-
----
-
-## Roadmap
-
-- [x] Project setup, dependency management
-- [ ] Source adapters (Tavily, NewsAPI, arxiv, Hacker News, RSS)
-- [ ] Content processing pipeline
-- [ ] User onboarding and preference system
-- [ ] Recommendation engine
-- [ ] Feedback loop
-- [ ] Daily digest delivery
-- [ ] Social platform connectors
-
-See `product_description/PRD_v1.md` for the full plan.
 
 ---
 
