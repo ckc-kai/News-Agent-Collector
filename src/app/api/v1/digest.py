@@ -38,37 +38,22 @@ async def get_latest_digest(
     if not digest:
         raise HTTPException(status_code=404, detail="No digest found for this user")
 
-    # Build response with article data
+    # Build clean response — only what a reader needs
     article_repo = ArticleRepository(session)
     items = []
     for item in sorted(digest.items, key=lambda i: i.position):
         article = await article_repo.get_by_id(item.article_id)
         if article:
             items.append({
-                "position": item.position,
-                "rendered_depth": item.rendered_depth,
-                "final_score": item.final_score,
-                "is_exploration": item.is_exploration,
-                "article": {
-                    "id": article.id,
-                    "title": article.title,
-                    "source_url": article.source_url,
-                    "source_adapter": article.source_adapter,
-                    "authors": article.authors or [],
-                    "published_at": article.published_at,
-                    "domain": article.domain,
-                    "tags": article.tags or [],
-                    "media_type": article.media_type,
-                    "importance_score": article.importance_score,
-                    "summary_l1": article.summary_l1,
-                    "summary_l2": article.summary_l2,
-                    "summary_l3": article.summary_l3,
-                },
+                "title": article.title,
+                "summary": article.summary_l2 or article.summary_l1 or "",
+                "domain": article.domain,
+                "source_url": article.source_url,
+                "source_name": article.source_adapter,
+                "published_at": article.published_at,
             })
 
     return {
-        "id": digest.id,
-        "user_id": digest.user_id,
         "generated_at": digest.generated_at,
         "item_count": digest.item_count,
         "items": items,

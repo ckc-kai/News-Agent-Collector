@@ -3,6 +3,12 @@ from pydantic import BaseModel, Field
 from src.app.core.constants import DepthLevel, DeliveryFrequency, DeliveryChannel
 
 
+class QuickUserCreate(BaseModel):
+    """Simple onboarding: just pick interests."""
+    name: str
+    interests: list[str] = Field(min_length=1, description="List of domain IDs")
+
+
 class DomainPreferenceInput(BaseModel):
     domain_id: str
     weight: float = Field(default=0.5, ge=0.0, le=1.0)

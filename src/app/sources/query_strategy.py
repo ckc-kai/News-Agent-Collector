@@ -58,6 +58,51 @@ DOMAIN_SOURCE_PRIORITY: dict[str, list[str]] = {
         "hackernews",         # Secondary
         "rss",                # Tertiary
     ],
+    DomainID.FINANCE: [
+        "newsdata",
+        "gnews",
+        "tavily",
+        "rss",
+    ],
+    DomainID.CRYPTO: [
+        "newsdata",
+        "gnews",
+        "tavily",
+        "rss",
+    ],
+    DomainID.HEALTH: [
+        "newsdata",
+        "gnews",
+        "tavily",
+        "rss",
+    ],
+    DomainID.SPORTS: [
+        "newsdata",
+        "gnews",
+        "rss",
+    ],
+    DomainID.ENTERTAINMENT: [
+        "newsdata",
+        "gnews",
+        "rss",
+    ],
+    DomainID.EDUCATION: [
+        "tavily",
+        "gnews",
+        "rss",
+    ],
+    DomainID.STARTUPS: [
+        "hackernews",
+        "tavily",
+        "gnews",
+        "rss",
+    ],
+    DomainID.CYBERSECURITY: [
+        "hackernews",
+        "tavily",
+        "newsdata",
+        "rss",
+    ],
 }
 
 # Default domain-specific queries
@@ -95,5 +140,37 @@ DOMAIN_DEFAULT_QUERIES: dict[str, list[str]] = {
     DomainID.OSS: [
         "trending open source projects",
         "new developer tools",
+    ],
+    DomainID.FINANCE: [
+        "stock market news today",
+        "investment and banking news",
+    ],
+    DomainID.CRYPTO: [
+        "cryptocurrency news today",
+        "bitcoin ethereum blockchain",
+    ],
+    DomainID.HEALTH: [
+        "health and wellness news",
+        "medical news today",
+    ],
+    DomainID.SPORTS: [
+        "sports news today",
+        "latest game results and highlights",
+    ],
+    DomainID.ENTERTAINMENT: [
+        "entertainment news today",
+        "movie music streaming news",
+    ],
+    DomainID.EDUCATION: [
+        "education news today",
+        "higher education EdTech",
+    ],
+    DomainID.STARTUPS: [
+        "startup funding news",
+        "new startup launches today",
+    ],
+    DomainID.CYBERSECURITY: [
+        "cybersecurity news today",
+        "data breach vulnerability news",
     ],
 }

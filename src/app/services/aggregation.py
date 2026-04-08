@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import random
 
 from src.app.core.exceptions import SourceRateLimitError
 from src.app.schemas.article import RawArticle
@@ -9,6 +10,9 @@ from src.app.sources.registry import source_registry
 from src.app.sources.query_strategy import DOMAIN_SOURCE_PRIORITY, DOMAIN_DEFAULT_QUERIES
 
 logger = logging.getLogger(__name__)
+
+MAX_PER_ROUND = 15
+MAX_PER_DOMAIN = 3
 
 
 class AggregationService:
@@ -66,6 +70,84 @@ class AggregationService:
         for domain in domains:
             articles = await self.fetch_for_domain(domain, max_per_source)
             all_articles.extend(articles)
+        return all_articles
+
+    async def fetch_smart(
+        self,
+        domains_with_weights: list[tuple[str, float]],
+        max_per_round: int = MAX_PER_ROUND,
+    ) -> list[RawArticle]:
+        """Fetch with smart domain sampling: prioritize high-weight domains,
+        sprinkle in 1-3 random exploration articles from lower-weight ones.
+        Total capped at max_per_round."""
+        if not domains_with_weights:
+            return []
+
+        sorted_dw = sorted(domains_with_weights, key=lambda x: x[1], reverse=True)
+        total_weight = sum(w for _, w in sorted_dw)
+        if total_weight == 0:
+            total_weight = 1.0
+
+        # Allocate articles per domain proportional to weight
+        allocations: dict[str, int] = {}
+        remaining = max_per_round
+
+        for domain, weight in sorted_dw:
+            if remaining <= 0:
+                break
+            share = max(1, round((weight / total_weight) * max_per_round))
+            share = min(share, MAX_PER_DOMAIN, remaining)
+            allocations[domain] = share
+            remaining -= share
+
+        # Distribute leftover budget to random unallocated domains (exploration)
+        unallocated = [d for d, _ in sorted_dw if d not in allocations]
+        if remaining > 0 and unallocated:
+            picks = random.sample(unallocated, min(remaining, len(unallocated)))
+            for d in picks:
+                allocations[d] = 1
+                remaining -= 1
+
+        # If still remaining, boost top domains (up to MAX_PER_DOMAIN each)
+        if remaining > 0:
+            for domain, _ in sorted_dw:
+                if remaining <= 0:
+                    break
+                current = allocations.get(domain, 0)
+                if current < MAX_PER_DOMAIN:
+                    extra = min(MAX_PER_DOMAIN - current, remaining)
+                    allocations[domain] = current + extra
+                    remaining -= extra
+
+        # Fetch all domains concurrently
+        domain_order = list(allocations.keys())
+        tasks = [
+            self.fetch_for_domain(domain, max_per_source=allocations[domain])
+            for domain in domain_order
+        ]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        all_articles: list[RawArticle] = []
+        for i, result in enumerate(results):
+            if isinstance(result, Exception):
+                logger.warning("Fetch failed for %s: %s", domain_order[i], result)
+                continue
+            domain_articles = list(result)
+            target = allocations[domain_order[i]]
+            if len(domain_articles) > target:
+                random.shuffle(domain_articles)
+                domain_articles = domain_articles[:target]
+            all_articles.extend(domain_articles)
+
+        # Final trim
+        if len(all_articles) > max_per_round:
+            random.shuffle(all_articles)
+            all_articles = all_articles[:max_per_round]
+
+        logger.info(
+            "Smart fetch: %d articles from %d domains (budget: %d)",
+            len(all_articles), len(allocations), max_per_round,
+        )
         return all_articles
 
     async def search(

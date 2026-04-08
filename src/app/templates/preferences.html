@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Preferences — Discovery Feed{% endblock %}
+{% block content %}
+<h2 style="margin-bottom: 1.5rem;">Your Interests</h2>
+
+<p style="color: #666; margin-bottom: 1rem;">Weights adjust automatically as you read. You can also toggle interests here.</p>
+
+{% for pref in preferences %}
+<div class="card" style="display: flex; justify-content: space-between; align-items: center;">
+    <div>
+        <span class="badge">{{ pref.domain_id }}</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 1rem;">
+        <span style="font-size: 0.85rem; color: #666;">{{ "%.0f"|format(pref.weight * 100) }}%</span>
+        <div class="weight-bar">
+            <div class="weight-fill" style="width: {{ (pref.weight * 100)|int }}%;"></div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+{% if not preferences %}
+<div class="empty">
+    <p>No preferences set. <a href="/onboarding">Complete onboarding</a> first.</p>
+</div>
+{% endif %}
+{% endblock %}

@@ -33,3 +33,6 @@ logs/
 
 # Progress tracking (internal dev notes)
 progress/
+
+tests
+.claude

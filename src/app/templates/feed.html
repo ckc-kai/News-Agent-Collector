@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Feed — Discovery Feed{% endblock %}
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <h2>Your Feed</h2>
+    <form method="POST" action="/generate">
+        <button type="submit" class="btn">See What's New Today</button>
+    </form>
+</div>
+
+{% if message %}
+<div class="msg">{{ message }}</div>
+{% endif %}
+
+{% if items %}
+    {% for item in items %}
+    <div class="card">
+        <h3>
+            <a href="{{ item.source_url }}" target="_blank" rel="noopener"
+               hx-post="/api/v1/track/click"
+               hx-vals='{"user_id": "{{ user_id }}", "article_id": "{{ item.article_id }}"}'
+               hx-swap="none">
+                {{ item.title }}
+            </a>
+        </h3>
+        <p class="summary">{{ item.summary }}</p>
+        <div class="meta">
+            <span class="badge">{{ item.domain or "general" }}</span>
+            <span>{{ item.source_name }}</span>
+            {% if item.published_at %}
+            <span>{{ item.published_at }}</span>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="empty">
+        <p>No articles yet. Click <strong>See What's New Today</strong> to fetch your first feed.</p>
+    </div>
+{% endif %}
+{% endblock %}

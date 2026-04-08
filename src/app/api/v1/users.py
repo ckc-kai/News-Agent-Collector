@@ -1,12 +1,57 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.app.db.repositories.user import UserRepository
 from src.app.dependencies import get_db
 from src.app.models.user import User, UserDomainPreference
-from src.app.schemas.user import UserCreate, UserProfile
+from src.app.schemas.user import QuickUserCreate, UserCreate, UserProfile
 
 router = APIRouter(prefix="/users", tags=["users"])
+
+
+@router.post("/quick", response_model=UserProfile, status_code=201)
+async def quick_create_user(
+    data: QuickUserCreate,
+    session: AsyncSession = Depends(get_db),
+):
+    """Simple onboarding: pick interests, equal weights, default depth."""
+    user = User(
+        name=data.name,
+        global_depth_fallback="L2",
+        exploration_rate=0.15,
+        onboarding_completed=True,
+    )
+    session.add(user)
+    await session.flush()
+
+    for interest in data.interests:
+        pref = UserDomainPreference(
+            user_id=user.id,
+            domain_id=interest,
+            weight=0.5,
+            depth_preference="L2",
+            is_explicit=True,
+        )
+        session.add(pref)
+
+    await session.flush()
+    repo = UserRepository(session)
+    user = await repo.get_with_preferences(user.id)
+    return user
+
+
+@router.get("/me", response_model=UserProfile)
+async def get_current_user(
+    session: AsyncSession = Depends(get_db),
+):
+    """Get the single user (personal tool mode)."""
+    result = await session.execute(select(User).limit(1))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="No user found. Complete onboarding first.")
+    repo = UserRepository(session)
+    return await repo.get_with_preferences(user.id)
 
 
 @router.post("", response_model=UserProfile, status_code=201)
@@ -31,7 +76,6 @@ async def create_user(
     session.add(user)
     await session.flush()
 
-    # Create domain preferences
     for dp in data.domains:
         pref = UserDomainPreference(
             user_id=user.id,
@@ -43,8 +87,6 @@ async def create_user(
         session.add(pref)
 
     await session.flush()
-
-    # Reload with preferences
     repo = UserRepository(session)
     user = await repo.get_with_preferences(user.id)
     return user

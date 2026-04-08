@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Exploring — Discovery Feed{% endblock %}
+{% block content %}
+<div style="text-align: center; padding: 4rem 1rem;">
+    <div id="spinner" style="margin-bottom: 2rem;">
+        <svg width="48" height="48" viewBox="0 0 24 24" style="animation: spin 1s linear infinite;">
+            <circle cx="12" cy="12" r="10" stroke="#4361ee" stroke-width="3" fill="none" stroke-dasharray="31.4" stroke-dashoffset="10" stroke-linecap="round"/>
+        </svg>
+    </div>
+    <h2 id="status-text" style="margin-bottom: 0.5rem;">Starting...</h2>
+    <p id="status-detail" style="color: #888;">This may take a minute or two.</p>
+
+    <div id="steps" style="margin-top: 2rem; text-align: left; max-width: 400px; margin-left: auto; margin-right: auto;">
+    </div>
+</div>
+
+<style>
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    .step {
+        padding: 0.4rem 0;
+        font-size: 0.9rem;
+        color: #aaa;
+        border-left: 3px solid #e0e0e0;
+        padding-left: 1rem;
+        margin-bottom: 0.3rem;
+        transition: all 0.3s;
+    }
+    .step.active {
+        color: #4361ee;
+        border-left-color: #4361ee;
+        font-weight: 600;
+    }
+    .step.done {
+        color: #2e7d32;
+        border-left-color: #2e7d32;
+    }
+</style>
+
+<script>
+    const seenSteps = [];
+    const stepsEl = document.getElementById('steps');
+    const statusText = document.getElementById('status-text');
+
+    async function poll() {
+        try {
+            const resp = await fetch('/generate/status');
+            const data = await resp.json();
+
+            statusText.textContent = data.step || 'Working...';
+
+            // Track steps
+            if (data.step && !seenSteps.includes(data.step) && data.state === 'running') {
+                // Mark previous steps as done
+                document.querySelectorAll('.step.active').forEach(el => {
+                    el.classList.remove('active');
+                    el.classList.add('done');
+                    el.textContent = '✓ ' + el.textContent;
+                });
+                seenSteps.push(data.step);
+                const stepEl = document.createElement('div');
+                stepEl.className = 'step active';
+                stepEl.textContent = data.step;
+                stepsEl.appendChild(stepEl);
+            }
+
+            if (data.state === 'done') {
+                // Mark last step done
+                document.querySelectorAll('.step.active').forEach(el => {
+                    el.classList.remove('active');
+                    el.classList.add('done');
+                    el.textContent = '✓ ' + el.textContent;
+                });
+                document.getElementById('spinner').innerHTML = '<span style="font-size: 3rem;">✓</span>';
+                statusText.textContent = 'Your feed is ready!';
+                document.getElementById('status-detail').innerHTML =
+                    '<a href="/" class="btn" style="margin-top: 1rem; display: inline-block;">View Feed</a>';
+                return;
+            }
+
+            if (data.state === 'error') {
+                document.getElementById('spinner').innerHTML = '<span style="font-size: 3rem;">✗</span>';
+                statusText.textContent = 'Something went wrong';
+                document.getElementById('status-detail').innerHTML =
+                    data.step + '<br><a href="/" style="margin-top: 1rem; display: inline-block;">Back to Feed</a>';
+                return;
+            }
+        } catch (e) {
+            // Network error, keep polling
+        }
+        setTimeout(poll, 1500);
+    }
+
+    poll();
+</script>
+{% endblock %}

@@ -2,11 +2,14 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 
 from src.app.api.router import api_router
 from src.app.cache.client import close_redis
 from src.app.config import settings
 from src.app.db.session import engine
+from src.app.frontend import router as frontend_router
 
 logging.basicConfig(
     level=logging.DEBUG if settings.debug else logging.INFO,
@@ -33,3 +36,4 @@ app = FastAPI(
 )
 
 app.include_router(api_router)
+app.include_router(frontend_router)

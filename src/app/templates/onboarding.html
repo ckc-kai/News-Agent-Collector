@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Welcome — Discovery Feed{% endblock %}
+{% block content %}
+<h2 style="margin-bottom: 0.5rem;">Welcome to Discovery Feed</h2>
+<p style="color: #666; margin-bottom: 1rem;">Pick the topics you're interested in. We'll handle the rest.</p>
+
+<form method="POST" action="/onboarding">
+    <div class="grid">
+        {% for domain in domains %}
+        <label>
+            <input type="checkbox" name="interests" value="{{ domain.id }}">
+            {{ domain.label }}
+        </label>
+        {% endfor %}
+    </div>
+    <input type="hidden" name="name" value="User">
+    <button type="submit" class="btn" style="margin-top: 1rem;">Start Reading</button>
+</form>
+{% endblock %}
