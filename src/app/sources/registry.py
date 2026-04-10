@@ -2,7 +2,7 @@ import logging
 
 from src.app.sources.base import SourceAdapter
 from src.app.sources.adapters.tavily import TavilyAdapter
-from src.app.sources.adapters.newsapi import NewsAPIAdapter
+from src.app.sources.adapters.event_registry import EventRegistryAdapter
 from src.app.sources.adapters.gnews import GNewsAdapter
 from src.app.sources.adapters.newsdata import NewsDataAdapter
 from src.app.sources.adapters.arxiv_source import ArxivAdapter
@@ -27,7 +27,7 @@ class SourceRegistry:
     def _init_adapters(self) -> None:
         adapter_classes: list[type[SourceAdapter]] = [
             TavilyAdapter,
-            NewsAPIAdapter,
+            EventRegistryAdapter,
             GNewsAdapter,
             NewsDataAdapter,
             ArxivAdapter,

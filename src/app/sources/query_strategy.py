@@ -12,95 +12,99 @@ DOMAIN_SOURCE_PRIORITY: dict[str, list[str]] = {
     DomainID.AI_ML: [
         "arxiv",              # Primary: best for papers
         "semantic_scholar",   # Secondary: citations + importance
-        "hackernews",         # Tertiary: community signal
-        "tavily",             # Fallback
+        "event_registry",     # Tertiary: full-body news + paywall-free
+        "hackernews",         # Community signal
         "rss",
     ],
     DomainID.TECH: [
-        "hackernews",         # Primary
-        "newsapi",            # Secondary
-        "github_trending",    # Tertiary
-        "rss",                # Fallback
+        "event_registry",     # Primary: concept-filtered, full body
+        "hackernews",         # Secondary: community signal
+        "github_trending",    # Tertiary: OSS activity
+        "rss",
         "gnews",
     ],
     DomainID.ECON: [
-        "newsapi",            # Primary
+        "event_registry",     # Primary: concept-filtered, full body
         "gnews",              # Secondary
         "newsdata",           # Tertiary
-        "rss",                # Fallback
+        "rss",
     ],
     DomainID.POLITICS: [
-        "newsapi",            # Primary
+        "event_registry",     # Primary: concept-filtered, geo-aware
         "newsdata",           # Secondary
         "gnews",              # Tertiary
-        "rss",                # Fallback
+        "rss",
     ],
     DomainID.BIOTECH: [
         "semantic_scholar",   # Primary: papers + citations
-        "newsapi",            # Secondary
+        "event_registry",     # Secondary: full-body news + PR
         "newsdata",           # Tertiary
-        "tavily",             # Fallback
+        "tavily",
     ],
     DomainID.SCIENCE: [
         "arxiv",              # Primary
         "semantic_scholar",   # Secondary
-        "newsapi",            # Tertiary
-        "rss",                # Fallback
+        "event_registry",     # Tertiary: full-body news
+        "rss",
     ],
     DomainID.SUSTAINABILITY: [
-        "newsapi",            # Primary
+        "event_registry",     # Primary: concept-filtered
         "gnews",              # Secondary
         "newsdata",           # Tertiary
-        "rss",                # Fallback
+        "rss",
     ],
     DomainID.OSS: [
         "github_trending",    # Primary
         "hackernews",         # Secondary
-        "rss",                # Tertiary
+        "event_registry",     # Tertiary: news about open source
+        "rss",
     ],
     DomainID.FINANCE: [
-        "newsdata",
-        "gnews",
-        "tavily",
+        "event_registry",     # Primary: concept-filtered, full body
+        "newsdata",           # Secondary
+        "gnews",              # Tertiary
         "rss",
     ],
     DomainID.CRYPTO: [
-        "newsdata",
-        "gnews",
-        "tavily",
+        "event_registry",     # Primary: concept-filtered
+        "newsdata",           # Secondary
+        "gnews",              # Tertiary
         "rss",
     ],
     DomainID.HEALTH: [
-        "newsdata",
-        "gnews",
-        "tavily",
+        "event_registry",     # Primary: concept-filtered
+        "newsdata",           # Secondary
+        "gnews",              # Tertiary
         "rss",
     ],
     DomainID.SPORTS: [
-        "newsdata",
-        "gnews",
+        "event_registry",     # Primary: concept-filtered
+        "newsdata",           # Secondary
+        "gnews",              # Tertiary
         "rss",
     ],
     DomainID.ENTERTAINMENT: [
-        "newsdata",
-        "gnews",
+        "event_registry",     # Primary: concept-filtered
+        "newsdata",           # Secondary
+        "gnews",              # Tertiary
         "rss",
     ],
     DomainID.EDUCATION: [
-        "tavily",
-        "gnews",
+        "event_registry",     # Primary: concept-filtered
+        "tavily",             # Secondary
+        "gnews",              # Tertiary
         "rss",
     ],
     DomainID.STARTUPS: [
-        "hackernews",
-        "tavily",
-        "gnews",
+        "event_registry",     # Primary: concept-filtered + PR data type
+        "hackernews",         # Secondary: community signal
+        "tavily",             # Tertiary
         "rss",
     ],
     DomainID.CYBERSECURITY: [
-        "hackernews",
-        "tavily",
-        "newsdata",
+        "event_registry",     # Primary: concept-filtered
+        "hackernews",         # Secondary: community signal
+        "newsdata",           # Tertiary
         "rss",
     ],
 }

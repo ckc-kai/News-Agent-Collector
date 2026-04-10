@@ -16,7 +16,8 @@ class Settings(BaseSettings):
 
     # --- News & Search APIs ---
     tavily_api_key: str = ""
-    newsapi_api_key: str = ""
+    newsapi_api_key: str = ""  # deprecated — kept for backwards compat
+    event_registry_api_key: str = ""
     gnews_api_key: str = ""
     newsdata_api_key: str = ""
 
@@ -32,7 +33,8 @@ class Settings(BaseSettings):
 
     # --- Rate Limits (per day, from PRD) ---
     tavily_daily_limit: int = 15
-    newsapi_daily_limit: int = 100
+    newsapi_daily_limit: int = 100  # deprecated
+    event_registry_daily_limit: int = 2000
     gnews_daily_limit: int = 100
     newsdata_daily_limit: int = 200
     arxiv_daily_limit: int = 100
