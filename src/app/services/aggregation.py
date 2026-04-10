@@ -8,7 +8,7 @@ from src.app.services.topic_expander import TopicExpander
 from src.app.sources.base import SourceAdapter
 from src.app.sources.rate_limiter import rate_limiter
 from src.app.sources.registry import source_registry
-from src.app.sources.query_strategy import DOMAIN_SOURCE_PRIORITY, DOMAIN_DEFAULT_QUERIES
+from src.app.sources.query_strategy import DOMAIN_SOURCE_PRIORITY, DOMAIN_DEFAULT_QUERIES, NATURE_TO_SOURCES
 
 # Singleton for dynamic query generation for custom (unknown) domains
 topic_expander = TopicExpander()
@@ -24,20 +24,34 @@ EXPLORATION_WEIGHT = 0.1  # Low initial weight for exploration clicks
 class AggregationService:
     """Orchestrates fetching from multiple sources using the query strategy."""
 
-    # Default sources for custom domains not in DOMAIN_SOURCE_PRIORITY
-    _FALLBACK_SOURCES = ["tavily", "gnews", "newsdata", "hackernews"]
-
     async def fetch_for_domain(
         self, domain: str, max_per_source: int = 10
     ) -> list[RawArticle]:
         """Fetch articles for a domain using priority-ordered sources.
-        For unknown domains, generates queries dynamically via TopicExpander."""
+
+        Known domains (DomainID values) use hand-tuned source lists and queries.
+        Custom user-typed domains are classified by the LLM into source-affinity
+        natures (academic / industry_news / community_tech / general_news), and
+        only the 2-4 most relevant sources for that nature are queried.
+        """
         source_names = DOMAIN_SOURCE_PRIORITY.get(domain, [])
         queries = DOMAIN_DEFAULT_QUERIES.get(domain, [])
 
-        # Dynamic query generation for custom domains
+        # Dynamic routing for custom (user-typed) domains
         if not source_names:
-            source_names = self._FALLBACK_SOURCES
+            try:
+                natures = await topic_expander.classify_source_affinity(domain)
+                seen: set[str] = set()
+                source_names = []
+                for nature in natures:
+                    for src in NATURE_TO_SOURCES.get(nature, []):
+                        if src not in seen:
+                            seen.add(src)
+                            source_names.append(src)
+            except Exception:
+                logger.warning("Nature classification failed for %s, using general fallback", domain)
+                source_names = NATURE_TO_SOURCES["general_news"]
+
             try:
                 queries = await topic_expander.generate_queries(domain)
             except Exception:

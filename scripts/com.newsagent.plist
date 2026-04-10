@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  News Agent Collector — launchd agent
+  Install: copy to ~/Library/LaunchAgents/ then run:
+      cp scripts/com.newsagent.plist ~/Library/LaunchAgents/
+      launchctl load ~/Library/LaunchAgents/com.newsagent.plist
+
+  Why the script lives in ~/Library/Scripts/ and not scripts/:
+    macOS TCC (privacy) restrictions prevent launchd from opening files
+    directly from ~/Desktop. ~/Library/Scripts/ has no such restriction.
+    The script itself can still access project files on Desktop at runtime.
+
+  Security notes:
+    • NO secrets in this file — launch.sh sources .env at runtime
+    • PROJECT_DIR is a path, not a secret — safe in EnvironmentVariables
+    • LimitLoadToSessionType=Aqua: only runs in GUI login sessions,
+      never on SSH login or root
+    • KeepAlive=false: runs once on login, does not restart as a daemon
+    • StandardOut/Error go to ~/Library/Logs/NewsAgent/ (user-owned)
+-->
+<plist version="1.0">
+<dict>
+
+  <key>Label</key>
+  <string>com.newsagent</string>
+
+  <!-- Script lives in ~/Library/Scripts to avoid macOS TCC Desktop restrictions -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/kaichengchu/Library/Scripts/newsagent-launch.sh</string>
+  </array>
+
+  <!-- Inject project path so script works from outside the project tree -->
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PROJECT_DIR</key>
+    <string>/Users/kaichengchu/code/News-Agent-Collector</string>
+  </dict>
+
+  <!-- Fire once on load (login), do not restart if it exits -->
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <false/>
+
+  <!-- Let uvicorn (backgrounded by the script) outlive the script.
+       Without this, launchd sends SIGTERM to the entire process group
+       when the boot script exits, killing uvicorn immediately. -->
+  <key>AbandonProcessGroup</key>
+  <true/>
+
+  <!-- GUI sessions only — never SSH, never root login -->
+  <key>LimitLoadToSessionType</key>
+  <string>Aqua</string>
+
+  <!-- Log files (directory created by launch.sh if missing) -->
+  <key>StandardOutPath</key>
+  <string>/Users/kaichengchu/Library/Logs/NewsAgent/launch.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/kaichengchu/Library/Logs/NewsAgent/launch-err.log</string>
+
+</dict>
+</plist>

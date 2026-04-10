@@ -16,7 +16,8 @@ class Settings(BaseSettings):
 
     # --- News & Search APIs ---
     tavily_api_key: str = ""
-    newsapi_api_key: str = ""
+    newsapi_api_key: str = ""  # deprecated — kept for backwards compat
+    event_registry_api_key: str = ""
     gnews_api_key: str = ""
     newsdata_api_key: str = ""
 
@@ -32,7 +33,8 @@ class Settings(BaseSettings):
 
     # --- Rate Limits (per day, from PRD) ---
     tavily_daily_limit: int = 15
-    newsapi_daily_limit: int = 100
+    newsapi_daily_limit: int = 100  # deprecated
+    event_registry_daily_limit: int = 2000
     gnews_daily_limit: int = 100
     newsdata_daily_limit: int = 200
     arxiv_daily_limit: int = 100
@@ -53,6 +55,21 @@ class Settings(BaseSettings):
     digest_max_source_pct: float = 0.30
     default_exploration_rate: float = 0.15
     min_exploration_rate: float = 0.05
+
+    # --- Email Delivery ---
+    resend_api_key: str = ""
+    delivery_email_to: str = "chukaicheng1@gmail.com"
+    # onboarding@resend.dev works without domain verification (Resend free tier default).
+    # To send FROM your own address, verify it at resend.com/domains first.
+    delivery_email_from: str = "News Agent <onboarding@resend.dev>"
+
+    # --- Click Tracking (Cloudflare Worker) ---
+    cloudflare_worker_url: str = ""
+    cloudflare_worker_secret: str = ""
+
+    # --- Shutdown Behaviour ---
+    shutdown_after_delivery: bool = True
+    shutdown_docker_after_delivery: bool = False
 
     # --- Feature Flags ---
     enable_lda_classification: bool = False

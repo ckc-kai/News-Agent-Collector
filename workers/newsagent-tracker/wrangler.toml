@@ -1,0 +1,11 @@
+name = "newsagent-tracker"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+account_id = "c6def17cbf828b53a42f8b6b05ce2f30"
+
+[[kv_namespaces]]
+binding = "EVENTS_KV"
+id = "221bd191ab09429a9739276034673180"
+
+# Secrets (set via: npx wrangler secret put API_SECRET)
+# API_SECRET — used to authenticate GET /events requests from the local app

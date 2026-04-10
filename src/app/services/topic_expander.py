@@ -44,9 +44,32 @@ Rules:
 - Find breaking news and recent developments
 - Return ONLY the JSON object."""
 
+_NATURE_PROMPT = """Classify this topic into 1-3 source types from the list below.
+
+Return valid JSON only:
+{{"natures": ["type1", "type2"]}}
+
+Valid types:
+- academic: research papers, algorithms, mathematical theory, scientific discoveries
+- industry_news: company news, product launches, business, markets, regulation, policy
+- community_tech: developer tools, open source software, programming, GitHub, engineering
+- general_news: sports, entertainment, culture, current events, lifestyle
+
+Topic: '{topic}'
+
+Return ONLY the JSON object."""
+
 CACHE_TTL_DAYS = 7
 _MAX_SUGGESTION_LEN = 40
 _MAX_WORD_REPEAT = 2  # Reject if any word appears more than this many times
+
+# Valid source-affinity nature strings
+VALID_NATURES: frozenset[str] = frozenset({
+    "academic",        # Research papers, algorithms, science → arxiv, semantic_scholar
+    "industry_news",   # Companies, products, markets, policy → event_registry, gnews
+    "community_tech",  # Dev tools, OSS, HN-style discussion → hackernews, github_trending
+    "general_news",    # Sports, culture, current events → event_registry, newsdata
+})
 
 
 @dataclass
@@ -91,6 +114,7 @@ class TopicExpander:
     def __init__(self) -> None:
         self._suggestion_cache: dict[str, _CacheEntry] = {}
         self._query_cache: dict[str, _CacheEntry] = {}
+        self._nature_cache: dict[str, _CacheEntry] = {}
         if settings.groq_api_key:
             self._groq_client = AsyncGroq(api_key=settings.groq_api_key)
         else:
@@ -126,6 +150,33 @@ class TopicExpander:
             suggestions=subtopics,
             cached=False,
         )
+
+    async def classify_source_affinity(self, topic: str) -> list[str]:
+        """Classify a topic into source-affinity natures (cached 7 days).
+
+        Returns a list of nature strings from VALID_NATURES. Falls back to
+        ['general_news'] if the LLM returns nothing useful.
+        """
+        topic = topic.strip()
+        if not topic:
+            raise ValueError("Topic cannot be empty")
+
+        cache_key = topic.lower()
+        cached = self._nature_cache.get(cache_key)
+        if cached and cached.expires_at > datetime.utcnow():
+            return cached.data
+
+        prompt = _NATURE_PROMPT.format(topic=topic)
+        raw_natures = await self._call_llm(prompt, parse_key="natures")
+        natures = [n for n in raw_natures if n in VALID_NATURES]
+        if not natures:
+            natures = ["general_news"]
+
+        self._nature_cache[cache_key] = _CacheEntry(
+            data=natures,
+            expires_at=datetime.utcnow() + timedelta(days=CACHE_TTL_DAYS),
+        )
+        return natures
 
     async def generate_queries(self, domain: str) -> list[str]:
         """Generate search queries for a custom domain."""
