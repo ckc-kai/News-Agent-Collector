@@ -9,6 +9,7 @@ httpx==0.28.1
 
 # Database
 sqlalchemy==2.0.40
+greenlet==3.4.0
 asyncpg==0.30.0
 alembic==1.15.2
 psycopg2-binary==2.9.10

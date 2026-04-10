@@ -3,6 +3,7 @@ from src.app.models.user import User, UserDomainPreference
 from src.app.models.feedback import Feedback
 from src.app.models.digest import Digest, DigestItem
 from src.app.models.source_health import SourceHealthLog
+from src.app.models.delivery import DeliveryLog
 
 __all__ = [
     "Article",
@@ -12,4 +13,5 @@ __all__ = [
     "Digest",
     "DigestItem",
     "SourceHealthLog",
+    "DeliveryLog",
 ]

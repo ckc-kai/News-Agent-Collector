@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from src.app.api.v1 import health, articles, users, feedback, digest, search, preferences, tracking, topics
+from src.app.api.v1 import health, articles, users, feedback, digest, search, preferences, tracking, topics, deliver
 
 api_router = APIRouter(prefix="/api/v1")
 
@@ -13,3 +13,4 @@ api_router.include_router(search.router)
 api_router.include_router(preferences.router)
 api_router.include_router(tracking.router)
 api_router.include_router(topics.router)
+api_router.include_router(deliver.router)

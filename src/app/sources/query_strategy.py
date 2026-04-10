@@ -7,6 +7,17 @@ The aggregation service uses this to decide which adapters to query.
 from src.app.core.constants import DomainID
 
 
+# Dynamic source routing for user-typed custom domains.
+# Maps a topic's "nature" (classified by LLM) to the best-matched sources.
+# Sources are ordered by relevance within each nature — used in order of appearance
+# when deduplicating across multiple natures.
+NATURE_TO_SOURCES: dict[str, list[str]] = {
+    "academic":        ["arxiv", "semantic_scholar"],
+    "industry_news":   ["event_registry", "gnews"],
+    "community_tech":  ["hackernews", "github_trending"],
+    "general_news":    ["event_registry", "newsdata"],
+}
+
 # Priority-ordered source lists per domain
 DOMAIN_SOURCE_PRIORITY: dict[str, list[str]] = {
     DomainID.AI_ML: [

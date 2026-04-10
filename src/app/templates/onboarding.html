@@ -73,13 +73,13 @@
 
     {# ── RIGHT: Preset quick-picks ── #}
     <div style="padding: 2.5rem; background: var(--paper-2);">
-        <div class="section-label">Or start with a preset</div>
+        <div class="section-label">Popular topics</div>
         <div class="chip-grid">
-            {% for domain in domains %}
-            <button type="button" class="chip preset-chip"
-                    data-domain="{{ domain.id }}" data-label="{{ domain.label }}"
-                    onclick="addInterest('{{ domain.id }}', '{{ domain.label }}')">
-                {{ domain.label }}
+            {% for topic in popular_topics %}
+            <button type="button" class="chip popular-chip"
+                    data-domain="{{ topic.id }}" data-label="{{ topic.label }}"
+                    onclick="addInterest('{{ topic.id }}', '{{ topic.label }}')">
+                {{ topic.label }}
             </button>
             {% endfor %}
         </div>
@@ -204,7 +204,7 @@ function renderSelected() {
 }
 
 function updatePresetChips() {
-    document.querySelectorAll('.preset-chip').forEach(chip => {
+    document.querySelectorAll('.popular-chip').forEach(chip => {
         chip.classList.toggle('active', selected.has(chip.dataset.domain));
     });
 }

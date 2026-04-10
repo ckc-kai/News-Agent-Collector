@@ -28,6 +28,7 @@ from src.app.pipeline.stages.summarizer import SummarizerStage
 from src.app.pipeline.stages.storer import StorerStage
 from src.app.recommendation.engine import RecommendationEngine
 from src.app.services.aggregation import AggregationService
+from src.app.services.delivery import DeliveryService
 
 logger = logging.getLogger(__name__)
 
@@ -121,10 +122,10 @@ async def onboarding_page(request: Request, session: AsyncSession = Depends(get_
     if user:
         return RedirectResponse(url="/", status_code=302)
 
-    domains = [{"id": d.value, "label": DOMAIN_LABELS.get(d, d.value)} for d in DomainID]
+    popular_topics = [{"id": d.value, "label": DOMAIN_LABELS.get(d, d.value)} for d in DomainID]
     return templates.TemplateResponse("onboarding.html", {
         "request": request,
-        "domains": domains,
+        "popular_topics": popular_topics,
     })
 
 
@@ -138,10 +139,10 @@ async def onboarding_submit(
     interests = form.getlist("interests")
 
     if not interests:
-        domains = [{"id": d.value, "label": DOMAIN_LABELS.get(d, d.value)} for d in DomainID]
+        popular_topics = [{"id": d.value, "label": DOMAIN_LABELS.get(d, d.value)} for d in DomainID]
         return templates.TemplateResponse("onboarding.html", {
             "request": request,
-            "domains": domains,
+            "popular_topics": popular_topics,
             "error": "Please select at least one interest.",
         })
 
@@ -220,6 +221,17 @@ async def _run_generation(
             builder = DigestBuilder(engine=RecommendationEngine())
             await builder.build(user, candidates, session)
             await session.commit()
+
+            # Auto-deliver after generation — idempotent, skips if already sent today
+            try:
+                delivery_svc = DeliveryService()
+                delivery_result = await delivery_svc.send_digest_email(session, user_id)
+                if delivery_result.sent:
+                    logger.info("Digest email delivered automatically")
+                elif delivery_result.skipped:
+                    logger.info("Email delivery skipped: %s", delivery_result.reason)
+            except Exception:
+                logger.exception("Auto-delivery failed — digest is still available in browser")
 
         _generation_status = {"state": "done", "step": "Ready!"}
 
