@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Fetching Your Feed — Discovery{% endblock %}
+
+{% block content %}
+<div style="
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    margin-top: 3rem;
+    border: 2px solid var(--ink);
+    min-height: 360px;
+">
+    {# Left: Status ── #}
+    <div style="padding: 3rem; border-right: 2px solid var(--ink); display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+            <div class="section-label">Intelligence Gathering</div>
+            <h1 id="status-text" style="
+                font-family: var(--serif);
+                font-size: 2rem;
+                font-weight: 900;
+                letter-spacing: -0.03em;
+                line-height: 1.2;
+                margin-bottom: 1rem;
+            ">Starting…</h1>
+            <p id="status-detail" style="
+                font-family: var(--mono);
+                font-size: 0.72rem;
+                color: var(--ink-4);
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+            ">Searching across news, papers &amp; repositories</p>
+        </div>
+
+        <div id="spinner" style="margin-top: 2rem;">
+            <svg width="32" height="32" viewBox="0 0 24 24" style="animation: spin 1.2s linear infinite; opacity: 0.4;">
+                <circle cx="12" cy="12" r="10" stroke="var(--ink)" stroke-width="2.5" fill="none"
+                        stroke-dasharray="31.4" stroke-dashoffset="10" stroke-linecap="round"/>
+            </svg>
+        </div>
+    </div>
+
+    {# Right: Step log ── #}
+    <div style="padding: 3rem; background: var(--paper-2);">
+        <div class="section-label">Progress Log</div>
+        <div id="steps" style="display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.5rem;"></div>
+    </div>
+</div>
+
+<style>
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .step {
+        font-family: var(--mono);
+        font-size: 0.7rem;
+        color: var(--ink-4);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        padding: 0.35rem 0 0.35rem 0.75rem;
+        border-left: 2px solid var(--paper-2);
+        transition: all 0.2s;
+    }
+    .step.active { color: var(--ink); border-left-color: var(--ink); font-weight: 700; }
+    .step.done { color: var(--ink-3); border-left-color: var(--ink-3); }
+    .step.done::before { content: '✓ '; }
+</style>
+
+<script>
+    const seenSteps = [];
+    const stepsEl = document.getElementById('steps');
+    const statusText = document.getElementById('status-text');
+
+    async function poll() {
+        try {
+            const resp = await fetch('/generate/status');
+            const data = await resp.json();
+
+            statusText.textContent = data.step || 'Working…';
+
+            if (data.step && !seenSteps.includes(data.step) && data.state === 'running') {
+                document.querySelectorAll('.step.active').forEach(el => {
+                    el.classList.remove('active');
+                    el.classList.add('done');
+                });
+                seenSteps.push(data.step);
+                const stepEl = document.createElement('div');
+                stepEl.className = 'step active';
+                stepEl.textContent = data.step;
+                stepsEl.appendChild(stepEl);
+            }
+
+            if (data.state === 'done') {
+                document.querySelectorAll('.step.active').forEach(el => {
+                    el.classList.remove('active');
+                    el.classList.add('done');
+                });
+                document.getElementById('spinner').style.display = 'none';
+                statusText.textContent = 'Your feed is ready';
+                document.getElementById('status-detail').innerHTML =
+                    '<a href="/" class="btn" style="margin-top: 1.5rem; display: inline-block;">View Feed →</a>';
+                return;
+            }
+
+            if (data.state === 'error') {
+                document.getElementById('spinner').style.display = 'none';
+                statusText.textContent = 'Something went wrong';
+                document.getElementById('status-detail').innerHTML =
+                    '<span style="color:var(--accent);">' + data.step + '</span><br>' +
+                    '<a href="/" style="margin-top:1rem; display:inline-block; font-family:var(--mono); font-size:0.7rem; color:var(--ink-4);">Back to Feed</a>';
+                return;
+            }
+        } catch (e) {}
+        setTimeout(poll, 1500);
+    }
+    poll();
+</script>
+{% endblock %}

@@ -10,6 +10,14 @@ class DomainID(StrEnum):
     SCIENCE = "science"
     SUSTAINABILITY = "sustainability"
     OSS = "oss"
+    FINANCE = "finance"
+    CRYPTO = "crypto"
+    HEALTH = "health"
+    SPORTS = "sports"
+    ENTERTAINMENT = "entertainment"
+    EDUCATION = "education"
+    STARTUPS = "startups"
+    CYBERSECURITY = "cybersecurity"
 
 
 class MediaType(StrEnum):
@@ -100,5 +108,53 @@ DOMAIN_KEYWORDS: dict[str, list[str]] = {
         "developer tool", "API", "SDK", "release", "pull request",
         "contribution", "MIT license", "Apache", "Linux", "Rust",
         "Python", "JavaScript", "TypeScript", "Go", "Kubernetes",
+    ],
+    DomainID.FINANCE: [
+        "stock", "equity", "S&P 500", "Nasdaq", "Wall Street",
+        "investment", "hedge fund", "venture capital", "IPO", "earnings",
+        "dividend", "portfolio", "mutual fund", "ETF", "banking",
+        "mortgage", "credit", "forex", "treasury",
+    ],
+    DomainID.CRYPTO: [
+        "bitcoin", "ethereum", "cryptocurrency", "blockchain", "DeFi",
+        "NFT", "web3", "token", "mining", "wallet",
+        "stablecoin", "Solana", "crypto exchange", "smart contract",
+        "decentralized", "altcoin", "Binance", "Coinbase",
+    ],
+    DomainID.HEALTH: [
+        "health", "wellness", "mental health", "nutrition", "fitness",
+        "disease", "treatment", "therapy", "hospital", "healthcare",
+        "medicine", "diagnosis", "patient", "clinical", "public health",
+        "obesity", "diabetes", "heart disease", "cancer screening",
+    ],
+    DomainID.SPORTS: [
+        "NBA", "NFL", "FIFA", "soccer", "basketball",
+        "football", "baseball", "tennis", "Olympics", "championship",
+        "league", "tournament", "athlete", "coach", "stadium",
+        "World Cup", "playoff", "ESPN", "sports",
+    ],
+    DomainID.ENTERTAINMENT: [
+        "movie", "film", "Netflix", "Disney", "streaming",
+        "music", "album", "concert", "TV show", "celebrity",
+        "box office", "Hollywood", "gaming", "video game", "anime",
+        "podcast", "entertainment", "award", "Grammy",
+    ],
+    DomainID.EDUCATION: [
+        "education", "university", "college", "student", "school",
+        "learning", "online course", "MOOC", "scholarship", "curriculum",
+        "teacher", "professor", "academic", "EdTech", "tuition",
+        "degree", "research grant", "higher education",
+    ],
+    DomainID.STARTUPS: [
+        "startup", "founder", "seed round", "Series A", "Series B",
+        "Y Combinator", "accelerator", "incubator", "pitch deck",
+        "fundraising", "angel investor", "unicorn", "exit",
+        "product-market fit", "MVP", "pivot", "valuation",
+    ],
+    DomainID.CYBERSECURITY: [
+        "cybersecurity", "hacking", "data breach", "ransomware", "malware",
+        "phishing", "zero-day", "vulnerability", "CVE", "firewall",
+        "encryption", "CISO", "SOC", "penetration testing", "threat",
+        "cyber attack", "security patch", "authentication",
     ],
 }
