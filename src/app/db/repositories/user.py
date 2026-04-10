@@ -24,6 +24,24 @@ class UserRepository(BaseRepository[User]):
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
+    async def delete_domain_preference(
+        self, user_id: str, domain_id: str
+    ) -> bool:
+        """Remove a domain preference. Returns True if deleted, False if not found."""
+        stmt = select(UserDomainPreference).where(
+            UserDomainPreference.user_id == user_id,
+            UserDomainPreference.domain_id == domain_id,
+        )
+        result = await self._session.execute(stmt)
+        pref = result.scalar_one_or_none()
+
+        if not pref:
+            return False
+
+        await self._session.delete(pref)
+        await self._session.flush()
+        return True
+
     async def update_domain_preference(
         self,
         user_id: str,

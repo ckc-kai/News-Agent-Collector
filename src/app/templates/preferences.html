@@ -1,27 +1,201 @@
 {% extends "base.html" %}
-{% block title %}Preferences — Discovery Feed{% endblock %}
+{% block title %}My Interests — Discovery{% endblock %}
+
 {% block content %}
-<h2 style="margin-bottom: 1.5rem;">Your Interests</h2>
+<div style="
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 0;
+    margin-top: 2rem;
+    min-height: 60vh;
+">
+    {# ── LEFT: Current interests ── #}
+    <div style="padding-right: 2.5rem; border-right: 1px solid var(--ink-4);">
+        <div class="section-label">Active Interests</div>
+        <p style="font-family: var(--mono); font-size: 0.7rem; color: var(--ink-4); margin-bottom: 1.5rem;">
+            Weights adjust automatically as you read. Click × to remove.
+        </p>
 
-<p style="color: #666; margin-bottom: 1rem;">Weights adjust automatically as you read. You can also toggle interests here.</p>
-
-{% for pref in preferences %}
-<div class="card" style="display: flex; justify-content: space-between; align-items: center;">
-    <div>
-        <span class="badge">{{ pref.domain_id }}</span>
-    </div>
-    <div style="display: flex; align-items: center; gap: 1rem;">
-        <span style="font-size: 0.85rem; color: #666;">{{ "%.0f"|format(pref.weight * 100) }}%</span>
-        <div class="weight-bar">
-            <div class="weight-fill" style="width: {{ (pref.weight * 100)|int }}%;"></div>
+        <div id="interests-list">
+        {% for pref in preferences %}
+        <div class="interest-row" id="pref-{{ pref.domain_id }}" style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.85rem 0;
+            border-bottom: 1px solid var(--paper-2);
+        ">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <span class="badge badge-{{ pref.domain_id }}">{{ pref.domain_id }}</span>
+                <div style="
+                    width: 80px;
+                    height: 2px;
+                    background: var(--paper-2);
+                    position: relative;
+                ">
+                    <div style="
+                        position: absolute;
+                        left: 0; top: 0;
+                        height: 100%;
+                        width: {{ (pref.weight * 100)|int }}%;
+                        background: var(--ink);
+                    "></div>
+                </div>
+                <span style="font-family: var(--mono); font-size: 0.65rem; color: var(--ink-4);">
+                    {{ "%.0f"|format(pref.weight * 100) }}%
+                </span>
+            </div>
+            <button class="tag-remove" onclick="removeInterest('{{ pref.domain_id }}')"
+                    style="
+                        width: 22px; height: 22px;
+                        background: var(--paper-2);
+                        color: var(--ink-3);
+                        font-size: 0.8rem;
+                    "
+                    title="Remove {{ pref.domain_id }}">&times;</button>
         </div>
+        {% endfor %}
+        </div>
+
+        {% if not preferences %}
+        <div class="empty" style="padding: 2rem 0; text-align: left;">
+            No interests yet — add some on the right.
+        </div>
+        {% endif %}
+    </div>
+
+    {# ── RIGHT: Add new interests ── #}
+    <div style="padding-left: 2.5rem;">
+        <div class="section-label">Add New Interests</div>
+
+        <div style="position: relative; margin-bottom: 0.75rem;">
+            <input type="text" id="topic-input" class="input"
+                   placeholder="Type a topic…"
+                   autocomplete="off">
+            <div id="loading-indicator" style="
+                display: none;
+                position: absolute;
+                right: 10px; top: 50%;
+                transform: translateY(-50%);
+                font-family: var(--mono);
+                font-size: 0.62rem;
+                color: var(--ink-4);
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+            ">thinking…</div>
+        </div>
+        <p style="font-family: var(--mono); font-size: 0.65rem; color: var(--ink-4); margin-bottom: 0.75rem;">
+            Press Enter to add directly, or wait for suggestions.
+        </p>
+
+        <div id="suggestions" class="chip-grid" style="display: none;"></div>
     </div>
 </div>
-{% endfor %}
 
-{% if not preferences %}
-<div class="empty">
-    <p>No preferences set. <a href="/onboarding">Complete onboarding</a> first.</p>
-</div>
-{% endif %}
+<script>
+let debounceTimer = null;
+const topicInput = document.getElementById('topic-input');
+const suggestionsEl = document.getElementById('suggestions');
+const loadingIndicator = document.getElementById('loading-indicator');
+
+topicInput.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    const val = topicInput.value.trim();
+    if (val.length < 2) { suggestionsEl.style.display = 'none'; return; }
+    debounceTimer = setTimeout(() => expandTopic(val), 500);
+});
+
+topicInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        const val = topicInput.value.trim();
+        if (val.length >= 2) {
+            addInterest(val.toLowerCase().replace(/\s+/g, '_'));
+            topicInput.value = '';
+            suggestionsEl.style.display = 'none';
+        }
+    }
+});
+
+async function expandTopic(topic) {
+    loadingIndicator.style.display = 'block';
+    try {
+        const resp = await fetch('/api/v1/topics/expand', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({topic})
+        });
+        if (!resp.ok) return;
+        const data = await resp.json();
+
+        suggestionsEl.innerHTML = '';
+        data.suggestions.forEach(s => {
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'chip';
+            chip.textContent = s;
+            chip.onclick = () => {
+                addInterest(s.toLowerCase().replace(/\s+/g, '_'));
+                chip.classList.add('active');
+                chip.disabled = true;
+            };
+            suggestionsEl.appendChild(chip);
+        });
+        suggestionsEl.style.display = 'flex';
+    } catch (e) {
+        console.error('Expansion failed:', e);
+    } finally {
+        loadingIndicator.style.display = 'none';
+    }
+}
+
+async function addInterest(domainId) {
+    try {
+        const resp = await fetch('/api/v1/users/me/interests', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({domain_id: domainId})
+        });
+        if (resp.status === 409) return;
+        if (!resp.ok) return;
+
+        const list = document.getElementById('interests-list');
+        const emptyEl = list.querySelector('.empty');
+        if (emptyEl) emptyEl.remove();
+
+        const row = document.createElement('div');
+        row.className = 'interest-row';
+        row.id = 'pref-' + domainId;
+        row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:0.85rem 0; border-bottom: 1px solid var(--paper-2);';
+        row.innerHTML =
+            '<div style="display:flex; align-items:center; gap:1rem;">' +
+                '<span class="badge">' + domainId + '</span>' +
+                '<div style="width:80px;height:2px;background:var(--paper-2);position:relative;">' +
+                    '<div style="position:absolute;left:0;top:0;height:100%;width:50%;background:var(--ink);"></div>' +
+                '</div>' +
+                '<span style="font-family:var(--mono);font-size:0.65rem;color:var(--ink-4);">50%</span>' +
+            '</div>' +
+            '<button class="tag-remove" onclick="removeInterest(\'' + domainId + '\')" ' +
+                'style="width:22px;height:22px;background:var(--paper-2);color:var(--ink-3);font-size:0.8rem;" ' +
+                'title="Remove">&times;</button>';
+        list.appendChild(row);
+    } catch (e) {
+        console.error('Add failed:', e);
+    }
+}
+
+async function removeInterest(domainId) {
+    try {
+        const resp = await fetch('/api/v1/users/me/interests/' + encodeURIComponent(domainId), {
+            method: 'DELETE'
+        });
+        if (resp.ok || resp.status === 204) {
+            const row = document.getElementById('pref-' + domainId);
+            if (row) row.remove();
+        }
+    } catch (e) {
+        console.error('Remove failed:', e);
+    }
+}
+</script>
 {% endblock %}

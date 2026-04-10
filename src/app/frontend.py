@@ -10,7 +10,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.app.core.constants import DomainID
+from src.app.core.constants import DomainID, DOMAIN_KEYWORDS
 from src.app.db.repositories.article import ArticleRepository
 from src.app.db.repositories.digest import DigestRepository
 from src.app.db.repositories.user import UserRepository
@@ -80,6 +80,9 @@ async def home(request: Request, session: AsyncSession = Depends(get_db)):
     digest = await digest_repo.get_latest_for_user(user.id)
 
     items = []
+    exploration_items = []
+    user_domains = {dp.domain_id for dp in user.domain_preferences}
+
     if digest:
         article_repo = ArticleRepository(session)
         for item in sorted(digest.items, key=lambda i: i.position):
@@ -88,7 +91,7 @@ async def home(request: Request, session: AsyncSession = Depends(get_db)):
                 published = ""
                 if article.published_at:
                     published = article.published_at.strftime("%b %d, %H:%M")
-                items.append({
+                entry = {
                     "title": article.title,
                     "summary": article.summary_l2 or article.summary_l1 or "",
                     "domain": article.domain,
@@ -96,11 +99,17 @@ async def home(request: Request, session: AsyncSession = Depends(get_db)):
                     "source_name": article.source_adapter,
                     "published_at": published,
                     "article_id": article.id,
-                })
+                }
+                # All digest articles go to main feed; exploration articles are
+                # those from domains the user didn't explicitly set (if any overlap).
+                # We no longer exclude articles just because the classifier assigned
+                # a different domain than the raw user preference string.
+                items.append(entry)
 
     return templates.TemplateResponse("feed.html", {
         "request": request,
         "items": items,
+        "exploration_items": exploration_items[:3],
         "user_id": user.id,
         "message": None,
     })
@@ -168,7 +177,11 @@ async def _run_generation(
         _generation_status = {"state": "running", "step": "Searching the internet..."}
 
         aggregator = AggregationService()
-        raw_articles = await aggregator.fetch_smart(domains_with_weights)
+        all_known = list(DOMAIN_KEYWORDS.keys())
+        raw_articles, exploration_articles = await aggregator.fetch_smart_with_exploration(
+            domains_with_weights, all_known_domains=all_known
+        )
+        raw_articles = raw_articles + exploration_articles
 
         if not raw_articles:
             _generation_status = {"state": "done", "step": "No articles found."}

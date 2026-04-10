@@ -1,41 +1,171 @@
 {% extends "base.html" %}
-{% block title %}Feed — Discovery Feed{% endblock %}
-{% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-    <h2>Your Feed</h2>
-    <form method="POST" action="/generate">
-        <button type="submit" class="btn">See What's New Today</button>
+{% block title %}Today's Feed — Discovery{% endblock %}
+
+{% block nav_extra %}
+<div class="nav-action">
+    <form method="POST" action="/generate" style="display:inline;">
+        <button type="submit" class="btn btn-outline" style="font-size:0.65rem; padding:0.3rem 0.9rem;">
+            &#8635; Refresh
+        </button>
     </form>
 </div>
+{% endblock %}
+
+{% block full_width %}
+<!-- Above-the-fold rule -->
+<div style="border-top: 1px solid #c0bdb5; margin-top: 0;"></div>
+{% endblock %}
+
+{% block content %}
 
 {% if message %}
-<div class="msg">{{ message }}</div>
+<div class="msg" style="margin-top:1.5rem;">{{ message }}</div>
 {% endif %}
 
 {% if items %}
-    {% for item in items %}
-    <div class="card">
-        <h3>
+{# ── HERO + SIDEBAR GRID ── #}
+<div style="
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 0;
+    border-bottom: 2px solid var(--ink);
+    margin-top: 1.5rem;
+">
+    {# ── HERO ARTICLE (left) ── #}
+    {% set hero = items[0] %}
+    <div style="padding: 1.5rem 2rem 1.5rem 0; border-right: 1px solid var(--ink-4);">
+        <div class="article-meta">
+            <span class="badge badge-{{ hero.domain }}">{{ hero.domain or "general" }}</span>
+            <span>{{ hero.source_name }}</span>
+            {% if hero.published_at %}<span>{{ hero.published_at }}</span>{% endif %}
+        </div>
+        <h1 class="article-title" style="font-size: clamp(1.9rem, 3.5vw, 2.8rem); margin-bottom: 0.75rem;">
+            <a href="{{ hero.source_url }}" target="_blank" rel="noopener"
+               onclick="trackClick('{{ user_id }}', '{{ hero.article_id }}')">
+                {{ hero.title }}
+            </a>
+        </h1>
+        <p style="font-family: var(--sans); font-size: 1.15rem; color: var(--ink-2); line-height: 1.65; max-width: 680px;">
+            {{ hero.summary }}
+        </p>
+        <div class="article-byline">via {{ hero.source_name }}</div>
+    </div>
+
+    {# ── SIDEBAR: next 3 articles ── #}
+    <div style="padding-left: 1.5rem;">
+        {% for item in items[1:4] %}
+        <div style="
+            padding: 1rem 0;
+            {% if not loop.last %}border-bottom: 1px solid var(--paper-2);{% endif %}
+        ">
+            <div class="article-meta">
+                <span class="badge badge-{{ item.domain }}">{{ item.domain or "general" }}</span>
+                {% if item.published_at %}<span>{{ item.published_at }}</span>{% endif %}
+            </div>
+            <h3 class="article-title" style="font-size: 1.15rem;">
+                <a href="{{ item.source_url }}" target="_blank" rel="noopener"
+                   onclick="trackClick('{{ user_id }}', '{{ item.article_id }}')">
+                    {{ item.title }}
+                </a>
+            </h3>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{# ── SECONDARY GRID: remaining articles in 3 cols ── #}
+{% if items[4:] %}
+<div style="
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    border-bottom: 1px solid var(--ink-4);
+    margin-top: 0;
+">
+    {% for item in items[4:] %}
+    <div style="
+        padding: 1.25rem 1.5rem 1.25rem {% if loop.index == 1 %}0{% else %}1.5rem{% endif %};
+        {% if not loop.last %}border-right: 1px solid var(--ink-4);{% endif %}
+        {% if loop.index > 3 %}border-top: 1px solid var(--ink-4);{% endif %}
+    ">
+        <div class="article-meta">
+            <span class="badge badge-{{ item.domain }}">{{ item.domain or "general" }}</span>
+        </div>
+        <h3 class="article-title" style="font-size: 1.1rem; margin-bottom: 0.4rem;">
             <a href="{{ item.source_url }}" target="_blank" rel="noopener"
-               hx-post="/api/v1/track/click"
-               hx-vals='{"user_id": "{{ user_id }}", "article_id": "{{ item.article_id }}"}'
-               hx-swap="none">
+               onclick="trackClick('{{ user_id }}', '{{ item.article_id }}')">
                 {{ item.title }}
             </a>
         </h3>
-        <p class="summary">{{ item.summary }}</p>
-        <div class="meta">
-            <span class="badge">{{ item.domain or "general" }}</span>
-            <span>{{ item.source_name }}</span>
-            {% if item.published_at %}
-            <span>{{ item.published_at }}</span>
-            {% endif %}
-        </div>
+        <p class="article-summary" style="font-size: 0.95rem; -webkit-line-clamp: 3; display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden;">
+            {{ item.summary }}
+        </p>
+        <div class="article-byline">{{ item.source_name }}{% if item.published_at %} · {{ item.published_at }}{% endif %}</div>
     </div>
     {% endfor %}
-{% else %}
-    <div class="empty">
-        <p>No articles yet. Click <strong>See What's New Today</strong> to fetch your first feed.</p>
-    </div>
+</div>
 {% endif %}
+
+{# ── YOU MAY ALSO LIKE ── #}
+{% if exploration_items %}
+<div style="margin-top: 2rem;">
+    <hr class="section-rule">
+    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+        <span class="section-label" style="margin-bottom:0;">You May Also Like</span>
+        <span style="font-family: var(--mono); font-size: 0.6rem; color: var(--ink-4); font-style: italic;">
+            — from outside your interests
+        </span>
+    </div>
+    <div style="
+        display: grid;
+        grid-template-columns: repeat({{ exploration_items|length }}, 1fr);
+        gap: 0;
+        border: 1px solid var(--ink-4);
+        background: var(--paper-2);
+    ">
+        {% for item in exploration_items %}
+        <div style="
+            padding: 1.25rem 1.5rem;
+            {% if not loop.last %}border-right: 1px solid var(--ink-4);{% endif %}
+        ">
+            <div class="article-meta">
+                <span class="badge badge-{{ item.domain }}">{{ item.domain or "discover" }}</span>
+                <span style="color: var(--accent); font-weight:700;">New</span>
+            </div>
+            <h4 class="article-title" style="font-size: 1.05rem; margin-bottom: 0.35rem;">
+                <a href="{{ item.source_url }}" target="_blank" rel="noopener"
+                   onclick="trackExploration('{{ user_id }}', '{{ item.article_id }}', '{{ item.domain }}')">
+                    {{ item.title }}
+                </a>
+            </h4>
+            <p class="article-summary" style="font-size: 0.92rem;">
+                {{ item.summary[:160] }}{% if item.summary|length > 160 %}…{% endif %}
+            </p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% else %}
+<div class="empty" style="margin-top: 4rem;">
+    <p>No articles yet.</p>
+    <p style="font-size: 0.85rem; font-family: var(--mono); font-style: normal; color: var(--ink-4); margin-top: 1rem;">
+        Click <strong>Refresh</strong> in the header to fetch your first feed.
+    </p>
+</div>
+{% endif %}
+
+<script>
+function trackClick(userId, articleId) {
+    navigator.sendBeacon('/api/v1/track/click',
+        new Blob([JSON.stringify({user_id: userId, article_id: articleId})],
+                 {type: 'application/json'}));
+}
+function trackExploration(userId, articleId, domain) {
+    navigator.sendBeacon('/api/v1/track/click',
+        new Blob([JSON.stringify({user_id: userId, article_id: articleId, exploration: true})],
+                 {type: 'application/json'}));
+}
+</script>
 {% endblock %}

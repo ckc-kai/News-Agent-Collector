@@ -4,26 +4,48 @@ import random
 
 from src.app.core.exceptions import SourceRateLimitError
 from src.app.schemas.article import RawArticle
+from src.app.services.topic_expander import TopicExpander
 from src.app.sources.base import SourceAdapter
 from src.app.sources.rate_limiter import rate_limiter
 from src.app.sources.registry import source_registry
 from src.app.sources.query_strategy import DOMAIN_SOURCE_PRIORITY, DOMAIN_DEFAULT_QUERIES
 
+# Singleton for dynamic query generation for custom (unknown) domains
+topic_expander = TopicExpander()
+
 logger = logging.getLogger(__name__)
 
 MAX_PER_ROUND = 15
 MAX_PER_DOMAIN = 3
+EXPLORATION_SLOTS = 3  # 1-3 articles in "You May Also Like"
+EXPLORATION_WEIGHT = 0.1  # Low initial weight for exploration clicks
 
 
 class AggregationService:
     """Orchestrates fetching from multiple sources using the query strategy."""
 
+    # Default sources for custom domains not in DOMAIN_SOURCE_PRIORITY
+    _FALLBACK_SOURCES = ["tavily", "gnews", "newsdata", "hackernews"]
+
     async def fetch_for_domain(
         self, domain: str, max_per_source: int = 10
     ) -> list[RawArticle]:
-        """Fetch articles for a domain using priority-ordered sources."""
+        """Fetch articles for a domain using priority-ordered sources.
+        For unknown domains, generates queries dynamically via TopicExpander."""
         source_names = DOMAIN_SOURCE_PRIORITY.get(domain, [])
-        queries = DOMAIN_DEFAULT_QUERIES.get(domain, ["latest news"])
+        queries = DOMAIN_DEFAULT_QUERIES.get(domain, [])
+
+        # Dynamic query generation for custom domains
+        if not source_names:
+            source_names = self._FALLBACK_SOURCES
+            try:
+                queries = await topic_expander.generate_queries(domain)
+            except Exception:
+                logger.warning("Dynamic query generation failed for %s", domain)
+                queries = [f"latest {domain} news"]
+
+        if not queries:
+            queries = ["latest news"]
 
         all_articles: list[RawArticle] = []
         tasks = []
@@ -149,6 +171,50 @@ class AggregationService:
             len(all_articles), len(allocations), max_per_round,
         )
         return all_articles
+
+    async def fetch_smart_with_exploration(
+        self,
+        domains_with_weights: list[tuple[str, float]],
+        all_known_domains: list[str] | None = None,
+        max_per_round: int = MAX_PER_ROUND,
+    ) -> tuple[list[RawArticle], list[RawArticle]]:
+        """Fetch main articles + exploration articles from unselected domains.
+        Returns (main_articles, exploration_articles)."""
+        # Fetch main articles via existing fetch_smart
+        main_articles = await self.fetch_smart(domains_with_weights, max_per_round)
+
+        # Determine exploration domains
+        user_domain_ids = {d for d, _ in domains_with_weights}
+        candidate_domains = [
+            d for d in (all_known_domains or [])
+            if d not in user_domain_ids
+        ]
+
+        if not candidate_domains:
+            return main_articles, []
+
+        # Pick random exploration domains
+        num_explore = min(EXPLORATION_SLOTS, len(candidate_domains))
+        explore_domains = random.sample(candidate_domains, num_explore)
+
+        # Fetch 1 article per exploration domain
+        tasks = [self.fetch_for_domain(d, max_per_source=1) for d in explore_domains]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        exploration_articles: list[RawArticle] = []
+        for result in results:
+            if isinstance(result, Exception):
+                continue
+            for article in result[:1]:  # max 1 per domain
+                article.extra["is_exploration"] = True
+                article.extra["exploration_weight"] = EXPLORATION_WEIGHT
+                exploration_articles.append(article)
+
+        logger.info(
+            "Exploration: %d articles from %d domains",
+            len(exploration_articles), len(explore_domains),
+        )
+        return main_articles, exploration_articles
 
     async def search(
         self, query: str, max_results: int = 20

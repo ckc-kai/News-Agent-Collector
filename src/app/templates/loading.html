@@ -1,41 +1,66 @@
 {% extends "base.html" %}
-{% block title %}Exploring — Discovery Feed{% endblock %}
-{% block content %}
-<div style="text-align: center; padding: 4rem 1rem;">
-    <div id="spinner" style="margin-bottom: 2rem;">
-        <svg width="48" height="48" viewBox="0 0 24 24" style="animation: spin 1s linear infinite;">
-            <circle cx="12" cy="12" r="10" stroke="#4361ee" stroke-width="3" fill="none" stroke-dasharray="31.4" stroke-dashoffset="10" stroke-linecap="round"/>
-        </svg>
-    </div>
-    <h2 id="status-text" style="margin-bottom: 0.5rem;">Starting...</h2>
-    <p id="status-detail" style="color: #888;">This may take a minute or two.</p>
+{% block title %}Fetching Your Feed — Discovery{% endblock %}
 
-    <div id="steps" style="margin-top: 2rem; text-align: left; max-width: 400px; margin-left: auto; margin-right: auto;">
+{% block content %}
+<div style="
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    margin-top: 3rem;
+    border: 2px solid var(--ink);
+    min-height: 360px;
+">
+    {# Left: Status ── #}
+    <div style="padding: 3rem; border-right: 2px solid var(--ink); display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+            <div class="section-label">Intelligence Gathering</div>
+            <h1 id="status-text" style="
+                font-family: var(--serif);
+                font-size: 2rem;
+                font-weight: 900;
+                letter-spacing: -0.03em;
+                line-height: 1.2;
+                margin-bottom: 1rem;
+            ">Starting…</h1>
+            <p id="status-detail" style="
+                font-family: var(--mono);
+                font-size: 0.72rem;
+                color: var(--ink-4);
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+            ">Searching across news, papers &amp; repositories</p>
+        </div>
+
+        <div id="spinner" style="margin-top: 2rem;">
+            <svg width="32" height="32" viewBox="0 0 24 24" style="animation: spin 1.2s linear infinite; opacity: 0.4;">
+                <circle cx="12" cy="12" r="10" stroke="var(--ink)" stroke-width="2.5" fill="none"
+                        stroke-dasharray="31.4" stroke-dashoffset="10" stroke-linecap="round"/>
+            </svg>
+        </div>
+    </div>
+
+    {# Right: Step log ── #}
+    <div style="padding: 3rem; background: var(--paper-2);">
+        <div class="section-label">Progress Log</div>
+        <div id="steps" style="display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.5rem;"></div>
     </div>
 </div>
 
 <style>
-    @keyframes spin {
-        to { transform: rotate(360deg); }
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
     .step {
-        padding: 0.4rem 0;
-        font-size: 0.9rem;
-        color: #aaa;
-        border-left: 3px solid #e0e0e0;
-        padding-left: 1rem;
-        margin-bottom: 0.3rem;
-        transition: all 0.3s;
+        font-family: var(--mono);
+        font-size: 0.7rem;
+        color: var(--ink-4);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        padding: 0.35rem 0 0.35rem 0.75rem;
+        border-left: 2px solid var(--paper-2);
+        transition: all 0.2s;
     }
-    .step.active {
-        color: #4361ee;
-        border-left-color: #4361ee;
-        font-weight: 600;
-    }
-    .step.done {
-        color: #2e7d32;
-        border-left-color: #2e7d32;
-    }
+    .step.active { color: var(--ink); border-left-color: var(--ink); font-weight: 700; }
+    .step.done { color: var(--ink-3); border-left-color: var(--ink-3); }
+    .step.done::before { content: '✓ '; }
 </style>
 
 <script>
@@ -48,15 +73,12 @@
             const resp = await fetch('/generate/status');
             const data = await resp.json();
 
-            statusText.textContent = data.step || 'Working...';
+            statusText.textContent = data.step || 'Working…';
 
-            // Track steps
             if (data.step && !seenSteps.includes(data.step) && data.state === 'running') {
-                // Mark previous steps as done
                 document.querySelectorAll('.step.active').forEach(el => {
                     el.classList.remove('active');
                     el.classList.add('done');
-                    el.textContent = '✓ ' + el.textContent;
                 });
                 seenSteps.push(data.step);
                 const stepEl = document.createElement('div');
@@ -66,32 +88,28 @@
             }
 
             if (data.state === 'done') {
-                // Mark last step done
                 document.querySelectorAll('.step.active').forEach(el => {
                     el.classList.remove('active');
                     el.classList.add('done');
-                    el.textContent = '✓ ' + el.textContent;
                 });
-                document.getElementById('spinner').innerHTML = '<span style="font-size: 3rem;">✓</span>';
-                statusText.textContent = 'Your feed is ready!';
+                document.getElementById('spinner').style.display = 'none';
+                statusText.textContent = 'Your feed is ready';
                 document.getElementById('status-detail').innerHTML =
-                    '<a href="/" class="btn" style="margin-top: 1rem; display: inline-block;">View Feed</a>';
+                    '<a href="/" class="btn" style="margin-top: 1.5rem; display: inline-block;">View Feed →</a>';
                 return;
             }
 
             if (data.state === 'error') {
-                document.getElementById('spinner').innerHTML = '<span style="font-size: 3rem;">✗</span>';
+                document.getElementById('spinner').style.display = 'none';
                 statusText.textContent = 'Something went wrong';
                 document.getElementById('status-detail').innerHTML =
-                    data.step + '<br><a href="/" style="margin-top: 1rem; display: inline-block;">Back to Feed</a>';
+                    '<span style="color:var(--accent);">' + data.step + '</span><br>' +
+                    '<a href="/" style="margin-top:1rem; display:inline-block; font-family:var(--mono); font-size:0.7rem; color:var(--ink-4);">Back to Feed</a>';
                 return;
             }
-        } catch (e) {
-            // Network error, keep polling
-        }
+        } catch (e) {}
         setTimeout(poll, 1500);
     }
-
     poll();
 </script>
 {% endblock %}

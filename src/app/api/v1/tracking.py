@@ -13,11 +13,13 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/track", tags=["tracking"])
 
 CLICK_WEIGHT_INCREMENT = 0.02
+EXPLORATION_INITIAL_WEIGHT = 0.1
 
 
 class ClickEvent(BaseModel):
     user_id: str
     article_id: str
+    exploration: bool = False
 
 
 @router.post("/click")
@@ -38,7 +40,7 @@ async def track_click(
     pref = await user_repo.update_domain_preference(
         event.user_id,
         article.domain,
-        weight=None,  # we'll handle increment below
+        weight=None,
     )
 
     if pref:
@@ -50,5 +52,23 @@ async def track_click(
             event.user_id, article.domain, new_weight,
         )
         return {"status": "ok", "adjusted": True, "domain": article.domain, "new_weight": new_weight}
+
+    # Exploration click: create a new preference with low weight
+    if event.exploration and article.domain:
+        from src.app.models.user import UserDomainPreference
+        new_pref = UserDomainPreference(
+            user_id=event.user_id,
+            domain_id=article.domain,
+            weight=EXPLORATION_INITIAL_WEIGHT,
+            depth_preference="L2",
+            is_explicit=False,
+        )
+        session.add(new_pref)
+        await session.flush()
+        logger.info(
+            "Exploration click: user=%s domain=%s weight=%.2f",
+            event.user_id, article.domain, EXPLORATION_INITIAL_WEIGHT,
+        )
+        return {"status": "ok", "adjusted": True, "domain": article.domain, "new_weight": EXPLORATION_INITIAL_WEIGHT}
 
     return {"status": "ok", "adjusted": False}

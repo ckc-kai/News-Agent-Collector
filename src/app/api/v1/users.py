@@ -41,6 +41,56 @@ async def quick_create_user(
     return user
 
 
+@router.delete("/me/interests/{domain_id}", status_code=204)
+async def delete_interest(
+    domain_id: str,
+    session: AsyncSession = Depends(get_db),
+):
+    """Remove a domain interest for the current user."""
+    result = await session.execute(select(User).limit(1))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="No user found")
+
+    repo = UserRepository(session)
+    deleted = await repo.delete_domain_preference(user.id, domain_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Interest not found")
+
+
+@router.post("/me/interests", status_code=201)
+async def add_interest(
+    request_body: dict,
+    session: AsyncSession = Depends(get_db),
+):
+    """Add a new domain interest for the current user."""
+    domain_id = request_body.get("domain_id", "").strip()
+    if not domain_id:
+        raise HTTPException(status_code=400, detail="domain_id is required")
+
+    result = await session.execute(select(User).limit(1))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="No user found")
+
+    # Check if already exists
+    repo = UserRepository(session)
+    existing = await repo.update_domain_preference(user.id, domain_id)
+    if existing:
+        raise HTTPException(status_code=409, detail="Interest already exists")
+
+    pref = UserDomainPreference(
+        user_id=user.id,
+        domain_id=domain_id,
+        weight=0.5,
+        depth_preference="L2",
+        is_explicit=True,
+    )
+    session.add(pref)
+    await session.flush()
+    return {"domain_id": domain_id, "weight": 0.5}
+
+
 @router.get("/me", response_model=UserProfile)
 async def get_current_user(
     session: AsyncSession = Depends(get_db),
