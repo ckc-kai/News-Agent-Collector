@@ -56,6 +56,21 @@ class Settings(BaseSettings):
     default_exploration_rate: float = 0.15
     min_exploration_rate: float = 0.05
 
+    # --- Email Delivery ---
+    resend_api_key: str = ""
+    delivery_email_to: str = "chukaicheng1@gmail.com"
+    # onboarding@resend.dev works without domain verification (Resend free tier default).
+    # To send FROM your own address, verify it at resend.com/domains first.
+    delivery_email_from: str = "News Agent <onboarding@resend.dev>"
+
+    # --- Click Tracking (Cloudflare Worker) ---
+    cloudflare_worker_url: str = ""
+    cloudflare_worker_secret: str = ""
+
+    # --- Shutdown Behaviour ---
+    shutdown_after_delivery: bool = True
+    shutdown_docker_after_delivery: bool = False
+
     # --- Feature Flags ---
     enable_lda_classification: bool = False
     enable_drift_notification: bool = True
